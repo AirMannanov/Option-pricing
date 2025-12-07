@@ -36,4 +36,3 @@ private:
 } // namespace pricing
 
 #endif // PRICING_MODELS_BLACK_SCHOLES_MODEL_HPP
-

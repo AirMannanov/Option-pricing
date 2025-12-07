@@ -21,4 +21,3 @@ public:
 } // namespace pricing
 
 #endif // PRICING_MODELS_PRICING_MODEL_HPP
-

@@ -51,6 +51,7 @@ FetchContent_MakeAvailable(Catch2)
 # Test executable
 add_executable(test_pricing
     tests/test_black_scholes.cpp
+    tests/test_batch.cpp
 )
 
 target_link_libraries(test_pricing
@@ -62,4 +63,3 @@ target_link_libraries(test_pricing
 include(CTest)
 include(Catch)
 Catch_discover_tests(test_pricing)
-

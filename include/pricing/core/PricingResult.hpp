@@ -24,4 +24,3 @@ struct PricingResult {
 } // namespace pricing
 
 #endif // PRICING_CORE_PRICING_RESULT_HPP
-

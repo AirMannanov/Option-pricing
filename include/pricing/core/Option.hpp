@@ -44,4 +44,3 @@ private:
 } // namespace pricing
 
 #endif // PRICING_CORE_OPTION_HPP
-

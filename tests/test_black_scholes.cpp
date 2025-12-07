@@ -410,4 +410,3 @@ TEST_CASE("Greeks: Edge case - T=0 Greeks", "[greeks]") {
     REQUIRE_THAT(callItm.theta, WithinAbs(0.0, 0.0001));
     REQUIRE_THAT(callItm.rho, WithinAbs(0.0, 0.0001));
 }
-

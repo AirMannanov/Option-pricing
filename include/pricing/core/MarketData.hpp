@@ -38,4 +38,3 @@ private:
 } // namespace pricing
 
 #endif // PRICING_CORE_MARKET_DATA_HPP
-
