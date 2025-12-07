@@ -63,3 +63,12 @@ target_link_libraries(test_pricing
 include(CTest)
 include(Catch)
 Catch_discover_tests(test_pricing)
+
+# Benchmark executable
+add_executable(benchmark_pricing
+    src/benchmark/benchmark.cpp
+)
+
+target_link_libraries(benchmark_pricing
+    pricing
+)
