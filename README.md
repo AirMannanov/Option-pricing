@@ -176,5 +176,7 @@ cd build
 ## Документация
 
 - [API Documentation](docs/API.md) - Документация по API
+- [Black-Scholes Model Annotation](docs/BLACK_SCHOLES_ANNOTATION.md) - Информационная аннотация о модели Блэка-Шоулза
+- [Technical Specifications](docs/TECHNICAL_SPECIFICATION.md) – Спецификация проекта
 
 Проект создан в учебных целях.
