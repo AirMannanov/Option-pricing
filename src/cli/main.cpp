@@ -18,10 +18,12 @@ namespace {
                   << "  --rate r               Risk-free rate (annual)\n"
                   << "  --vol σ                Volatility (annual)\n"
                   << "  --maturity T           Time to expiration (years)\n"
+                  << "  --with-greeks          Calculate and display Greeks\n"
                   << "  --help                 Show this help message\n"
                   << "\nExample:\n"
                   << "  " << programName << " --model black_scholes --type call \\\n"
-                  << "     --spot 100 --strike 105 --rate 0.05 --vol 0.2 --maturity 0.5\n";
+                  << "     --spot 100 --strike 105 --rate 0.05 --vol 0.2 --maturity 0.5 \\\n"
+                  << "     --with-greeks\n";
     }
 
     double parseDouble(const std::string& arg, const std::string& paramName) {
@@ -50,6 +52,7 @@ namespace {
         double rate = 0.0;
         double vol = 0.0;
         double maturity = 0.0;
+        bool withGreeks = false;
         bool help = false;
     };
 
@@ -76,6 +79,8 @@ namespace {
                 args.vol = parseDouble(argv[++i], "--vol");
             } else if (arg == "--maturity" && i + 1 < argc) {
                 args.maturity = parseDouble(argv[++i], "--maturity");
+            } else if (arg == "--with-greeks") {
+                args.withGreeks = true;
             } else {
                 throw std::invalid_argument("Unknown argument: " + arg);
             }
@@ -114,6 +119,16 @@ namespace {
         std::cout << "Time to Expiration: " << args.maturity << " years\n";
         std::cout << "--------------------------------\n";
         std::cout << "Option Price: " << result.price << "\n";
+        
+        if (result.hasGreeks()) {
+            std::cout << "\n--- Greeks ---\n";
+            std::cout << "Delta: " << result.delta << "\n";
+            std::cout << "Gamma: " << result.gamma << "\n";
+            std::cout << "Vega:  " << result.vega << "\n";
+            std::cout << "Theta: " << result.theta << "\n";
+            std::cout << "Rho:   " << result.rho << "\n";
+        }
+        
         std::cout << "==============================\n\n";
     }
 }
@@ -135,7 +150,12 @@ int main(int argc, char* argv[]) {
 
         // Create model and calculate price
         pricing::models::BlackScholesModel model;
-        pricing::core::PricingResult result = model.price(option, marketData);
+        pricing::core::PricingResult result;
+        if (args.withGreeks) {
+            result = model.priceWithGreeks(option, marketData);
+        } else {
+            result = model.price(option, marketData);
+        }
 
         // Print result
         printResult(result, args);

@@ -190,3 +190,224 @@ TEST_CASE("Black-Scholes: Known reference values", "[black_scholes]") {
     REQUIRE_THAT(result.price, WithinAbs(6.86, 0.01));
 }
 
+TEST_CASE("Greeks: Delta for Call option", "[greeks]") {
+    Option option(OptionType::Call, 100.0, 0.5);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto result = model.priceWithGreeks(option, marketData);
+
+    // Call Delta should be between 0 and 1
+    REQUIRE(result.delta > 0.0);
+    REQUIRE(result.delta < 1.0);
+    // For at-the-money option, Delta should be around 0.5
+    REQUIRE_THAT(result.delta, WithinAbs(0.5, 0.2));
+}
+
+TEST_CASE("Greeks: Delta for Put option", "[greeks]") {
+    Option option(OptionType::Put, 100.0, 0.5);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto result = model.priceWithGreeks(option, marketData);
+
+    // Put Delta should be between -1 and 0
+    REQUIRE(result.delta < 0.0);
+    REQUIRE(result.delta > -1.0);
+    // For at-the-money option, Delta should be around -0.5
+    REQUIRE_THAT(result.delta, WithinAbs(-0.5, 0.2));
+}
+
+TEST_CASE("Greeks: Delta Put-Call Parity", "[greeks]") {
+    // Delta_Call - Delta_Put = 1 (for same strike and expiration)
+    double S = 100.0;
+    double K = 105.0;
+    double r = 0.05;
+    double sigma = 0.2;
+    double T = 0.5;
+
+    Option callOption(OptionType::Call, K, T);
+    Option putOption(OptionType::Put, K, T);
+    MarketData marketData(S, r, sigma);
+    BlackScholesModel model;
+
+    auto callResult = model.priceWithGreeks(callOption, marketData);
+    auto putResult = model.priceWithGreeks(putOption, marketData);
+
+    double deltaDifference = callResult.delta - putResult.delta;
+    REQUIRE_THAT(deltaDifference, WithinAbs(1.0, 0.0001));
+}
+
+TEST_CASE("Greeks: Gamma is same for Call and Put", "[greeks]") {
+    // Gamma should be identical for Call and Put with same parameters
+    double S = 100.0;
+    double K = 105.0;
+    double r = 0.05;
+    double sigma = 0.2;
+    double T = 0.5;
+
+    Option callOption(OptionType::Call, K, T);
+    Option putOption(OptionType::Put, K, T);
+    MarketData marketData(S, r, sigma);
+    BlackScholesModel model;
+
+    auto callResult = model.priceWithGreeks(callOption, marketData);
+    auto putResult = model.priceWithGreeks(putOption, marketData);
+
+    REQUIRE_THAT(callResult.gamma, WithinAbs(putResult.gamma, 0.0001));
+    // Gamma should always be positive
+    REQUIRE(callResult.gamma > 0.0);
+}
+
+TEST_CASE("Greeks: Vega is same for Call and Put", "[greeks]") {
+    // Vega should be identical for Call and Put with same parameters
+    double S = 100.0;
+    double K = 105.0;
+    double r = 0.05;
+    double sigma = 0.2;
+    double T = 0.5;
+
+    Option callOption(OptionType::Call, K, T);
+    Option putOption(OptionType::Put, K, T);
+    MarketData marketData(S, r, sigma);
+    BlackScholesModel model;
+
+    auto callResult = model.priceWithGreeks(callOption, marketData);
+    auto putResult = model.priceWithGreeks(putOption, marketData);
+
+    REQUIRE_THAT(callResult.vega, WithinAbs(putResult.vega, 0.0001));
+    // Vega should always be positive
+    REQUIRE(callResult.vega > 0.0);
+}
+
+TEST_CASE("Greeks: Theta is negative (time decay)", "[greeks]") {
+    // Theta should be negative (option loses value over time)
+    Option callOption(OptionType::Call, 100.0, 0.5);
+    Option putOption(OptionType::Put, 100.0, 0.5);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto callResult = model.priceWithGreeks(callOption, marketData);
+    auto putResult = model.priceWithGreeks(putOption, marketData);
+
+    // Theta is typically negative (time decay)
+    // For long options, Theta is negative
+    REQUIRE(callResult.theta < 0.0);
+    REQUIRE(putResult.theta < 0.0);
+}
+
+TEST_CASE("Greeks: Rho for Call is positive", "[greeks]") {
+    // Call Rho should be positive (higher interest rate increases call value)
+    Option option(OptionType::Call, 100.0, 0.5);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto result = model.priceWithGreeks(option, marketData);
+
+    REQUIRE(result.rho > 0.0);
+}
+
+TEST_CASE("Greeks: Rho for Put is negative", "[greeks]") {
+    // Put Rho should be negative (higher interest rate decreases put value)
+    Option option(OptionType::Put, 100.0, 0.5);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto result = model.priceWithGreeks(option, marketData);
+
+    REQUIRE(result.rho < 0.0);
+}
+
+TEST_CASE("Greeks: Delta increases with spot price for Call", "[greeks]") {
+    // For Call, Delta should increase as spot price increases
+    Option option(OptionType::Call, 100.0, 0.5);
+    MarketData lowSpot(90.0, 0.05, 0.2);
+    MarketData highSpot(110.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto lowResult = model.priceWithGreeks(option, lowSpot);
+    auto highResult = model.priceWithGreeks(option, highSpot);
+
+    REQUIRE(highResult.delta > lowResult.delta);
+}
+
+TEST_CASE("Greeks: Delta decreases with spot price for Put", "[greeks]") {
+    // For Put, Delta should decrease (become more negative) as spot price increases
+    Option option(OptionType::Put, 100.0, 0.5);
+    MarketData lowSpot(90.0, 0.05, 0.2);
+    MarketData highSpot(110.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto lowResult = model.priceWithGreeks(option, lowSpot);
+    auto highResult = model.priceWithGreeks(option, highSpot);
+
+    REQUIRE(highResult.delta > lowResult.delta); // Both negative, but high is less negative
+}
+
+TEST_CASE("Greeks: Gamma is positive and reasonable", "[greeks]") {
+    // Gamma should always be positive
+    Option option(OptionType::Call, 100.0, 0.5);
+    MarketData atmData(100.0, 0.05, 0.2);
+    MarketData itmData(110.0, 0.05, 0.2);
+    MarketData otmData(90.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto atmResult = model.priceWithGreeks(option, atmData);
+    auto itmResult = model.priceWithGreeks(option, itmData);
+    auto otmResult = model.priceWithGreeks(option, otmData);
+
+    // Gamma should always be positive
+    REQUIRE(atmResult.gamma > 0.0);
+    REQUIRE(itmResult.gamma > 0.0);
+    REQUIRE(otmResult.gamma > 0.0);
+    
+    // Gamma should be reasonable (not too large)
+    REQUIRE(atmResult.gamma < 1.0);
+    REQUIRE(itmResult.gamma < 1.0);
+    REQUIRE(otmResult.gamma < 1.0);
+}
+
+TEST_CASE("Greeks: Vega increases with time to expiration", "[greeks]") {
+    // Vega should increase with longer time to expiration
+    Option shortTerm(OptionType::Call, 100.0, 0.25);
+    Option longTerm(OptionType::Call, 100.0, 1.0);
+    MarketData marketData(100.0, 0.05, 0.2);
+    BlackScholesModel model;
+
+    auto shortResult = model.priceWithGreeks(shortTerm, marketData);
+    auto longResult = model.priceWithGreeks(longTerm, marketData);
+
+    REQUIRE(longResult.vega > shortResult.vega);
+}
+
+TEST_CASE("Greeks: Edge case - T=0 Greeks", "[greeks]") {
+    // At expiration, Delta should be 0 or 1/-1, other Greeks should be 0
+    Option callOption(OptionType::Call, 100.0, 0.0);
+    Option putOption(OptionType::Put, 100.0, 0.0);
+    MarketData callItmData(110.0, 0.05, 0.2);  // S > K: ITM for Call
+    MarketData callOtmData(90.0, 0.05, 0.2);   // S < K: OTM for Call
+    MarketData putItmData(90.0, 0.05, 0.2);    // S < K: ITM for Put
+    MarketData putOtmData(110.0, 0.05, 0.2);   // S > K: OTM for Put
+    BlackScholesModel model;
+
+    auto callItm = model.priceWithGreeks(callOption, callItmData);
+    auto callOtm = model.priceWithGreeks(callOption, callOtmData);
+    auto putItm = model.priceWithGreeks(putOption, putItmData);
+    auto putOtm = model.priceWithGreeks(putOption, putOtmData);
+
+    // ITM Call: Delta = 1
+    REQUIRE_THAT(callItm.delta, WithinAbs(1.0, 0.0001));
+    // OTM Call: Delta = 0
+    REQUIRE_THAT(callOtm.delta, WithinAbs(0.0, 0.0001));
+    // ITM Put: Delta = -1
+    REQUIRE_THAT(putItm.delta, WithinAbs(-1.0, 0.0001));
+    // OTM Put: Delta = 0
+    REQUIRE_THAT(putOtm.delta, WithinAbs(0.0, 0.0001));
+
+    // At expiration, other Greeks should be 0
+    REQUIRE_THAT(callItm.gamma, WithinAbs(0.0, 0.0001));
+    REQUIRE_THAT(callItm.vega, WithinAbs(0.0, 0.0001));
+    REQUIRE_THAT(callItm.theta, WithinAbs(0.0, 0.0001));
+    REQUIRE_THAT(callItm.rho, WithinAbs(0.0, 0.0001));
+}
+
