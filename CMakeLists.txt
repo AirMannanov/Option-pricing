@@ -39,6 +39,27 @@ target_link_libraries(option_pricer_cli
 # Testing
 enable_testing()
 
-# Catch2 will be added later
-# For now, we just set up the structure
+# Catch2
+include(FetchContent)
+FetchContent_Declare(
+    Catch2
+    GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v3.5.0
+)
+FetchContent_MakeAvailable(Catch2)
+
+# Test executable
+add_executable(test_pricing
+    tests/test_black_scholes.cpp
+)
+
+target_link_libraries(test_pricing
+    PRIVATE
+    pricing
+    Catch2::Catch2WithMain
+)
+
+include(CTest)
+include(Catch)
+Catch_discover_tests(test_pricing)
 
